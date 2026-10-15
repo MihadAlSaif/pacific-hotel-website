@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+/*
+ * Pacific Hotel: a seaside front on the Essex coast.
+ * Layout: full-width horizon hero (sky over sea, the hotel name sitting on the horizon line),
+ * then one quiet reading column. Lifebuoy orange is used only for booking actions.
+ */
+@theme {
+  --color-chalk: #f8faf9;      /* page */
+  --color-paper: #ffffff;      /* panels */
+  --color-sky: #d7e8f0;        /* upper hero, soft fills */
+  --color-sky-deep: #a9cadb;
+  --color-sea: #1d4f63;        /* lower hero */
+  --color-ink: #0f2a3d;        /* text */
+  --color-drift: #5f7482;      /* secondary text */
+  --color-shore: #dde5e8;      /* lines */
+  --color-sand: #ece2cd;       /* photo placeholders */
+  --color-buoy: #e3582a;       /* booking actions */
+  --color-buoy-ink: #ffffff;
+  --color-ok: #2c7a4b;
+  --color-warn: #a4361d;
+
+  --font-display: "Young Serif", Georgia, serif;
+  --font-sans: "Figtree", system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+body {
+  background: var(--color-chalk);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer base {
+  h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 400; text-wrap: balance; line-height: 1.1; }
+}
+
+.gutter {
+  padding-left: max(20px, env(safe-area-inset-left, 0px));
+  padding-right: max(20px, env(safe-area-inset-right, 0px));
+}
+
+:focus-visible { outline: 3px solid var(--color-buoy); outline-offset: 2px; border-radius: 4px; }
+
+/* The hero: sky above, sea below, a single horizon line where the name sits. */
+.horizon {
+  --line: 62%;
+  background:
+    linear-gradient(to bottom, #eef6f9 0%, var(--color-sky) var(--line), transparent var(--line)),
+    repeating-linear-gradient(to bottom, transparent 0 14px, rgb(255 255 255 / 0.06) 14px 15px),
+    linear-gradient(to bottom, #2a6377 var(--line), var(--color-sea) 100%);
+}
+@media (max-width: 640px) { .horizon { --line: 55%; } }
+
+/* Placeholder for a photo the hotel will add: sand with a soft stripe, clearly labelled. */
+.photo-slot {
+  background:
+    repeating-linear-gradient(135deg, transparent 0 18px, rgb(255 255 255 / 0.35) 18px 20px),
+    var(--color-sand);
+}
+.photo-slot.sea {
+  background:
+    linear-gradient(to bottom, var(--color-sky) 0 55%, #2a6377 55% 100%);
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-ink/20 bg-paper px-5 py-2.5 font-semibold text-ink transition-colors;
+  }
+  .btn:hover { @apply bg-sky; }
+  .btn:disabled { @apply cursor-wait opacity-60; }
+  .btn-book { @apply border-buoy bg-buoy text-buoy-ink; }
+  .btn-book:hover { @apply bg-buoy brightness-105; }
+  .field { @apply grid min-w-0 gap-1; }
+  .field > label { @apply text-sm font-semibold text-drift; }
+  .input { @apply w-full min-w-0 rounded-xl border border-shore bg-paper px-3 py-2.5 text-base text-ink; }
+  .note { @apply rounded-xl bg-sky/60 px-4 py-3 text-[0.95rem]; }
+  .error { @apply rounded-xl bg-warn/10 px-4 py-3 text-[0.95rem] text-warn; }
+}
