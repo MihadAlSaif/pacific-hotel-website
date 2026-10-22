@@ -1,5 +1,8 @@
 # Pacific Hotel website
 
+Public website for Pacific Hotel, 7-9 Marine Parade East, Clacton-on-Sea.
+Bookings and availability are managed in [BedSync](https://github.com/MihadAlSaif/BedSync) (private staff app).
+
 The hotel's public website: rooms, facilities, location, and live availability from BedSync.
 Guests pick dates, see which rooms are free, and send a **booking request**. Requests and
 enquiries appear in BedSync under **Requests**, where staff accept them into a room or decline.
@@ -15,12 +18,11 @@ Room names must match the names in BedSync exactly.
 Photos: put image files in `public/` and replace the "Photo soon" placeholders in `src/components/Site.tsx`.
 
 ## Deploy on Cloudflare (once)
-Workers & Pages → Create → Import a repository → **BedSync**, then:
+Workers & Pages → Create → Import a repository → **pacific-hotel-website**, then:
 
 | Setting | Value |
 |---|---|
 | Project name | `pacific-hotel` |
-| Root directory | `website` |
 | Build command | `npm run build` |
 | Deploy command | `npx wrangler deploy` |
 
@@ -28,7 +30,6 @@ Address: `https://pacific-hotel.<your-subdomain>.workers.dev`. Every push to `ma
 
 ## Develop
 ```bash
-cd website
 npm install
 npm run dev            # http://localhost:3001 (talks to the live BedSync)
 npm run preview:page   # one-file preview with sample availability
