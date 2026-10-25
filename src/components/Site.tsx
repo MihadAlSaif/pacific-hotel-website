@@ -6,7 +6,11 @@ import { getAvailability, type Availability } from "@/api";
 import { addDays, fmtDay, ukToday } from "@/dates";
 import { FACILITIES, HOTEL, ROOMS, type Photo, type RoomInfo } from "@/site";
 import { EnquiryForm, RequestDialog, type Stay } from "./Forms";
+import { Carousel } from "./Carousel";
+import { Footer, Header } from "./Chrome";
 import { Gallery } from "./Gallery";
+import { rememberStay } from "./RoomPage";
+import { asset, roomHref } from "@/links";
 
 export function Site() {
   // Dates are set in the browser, not when the site is built, so "today" is always today in the UK.
@@ -39,6 +43,7 @@ export function Site() {
       const a = await getAvailability(start, end);
       setAvail(a);
       setStay({ start, end, guests });
+      rememberStay({ start, end, guests });
       document.getElementById("rooms")?.scrollIntoView({ block: "start" });
     } catch (err) {
       setError((err as Error).message);
@@ -53,21 +58,10 @@ export function Site() {
 
   const seaRooms = ROOMS.filter((r) => r.seaView);
   const townRooms = ROOMS.filter((r) => !r.seaView);
-  const year = new Date().getFullYear();
 
   return (
     <MotionConfig reducedMotion="user">
-      <header className="gutter sticky top-[env(safe-area-inset-top,0px)] z-40 border-b border-shore bg-chalk/90 backdrop-blur">
-        <nav className="mx-auto flex max-w-[1120px] flex-wrap items-center justify-between gap-x-6 gap-y-2 py-3" aria-label="Main">
-          <a href="#top" className="font-display text-xl">{HOTEL.name}</a>
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[0.95rem]">
-            <a href="#rooms" className="hover:underline">Rooms</a>
-            <a href="#stay" className="hover:underline">Your stay</a>
-            <a href="#find-us" className="hover:underline">Find us</a>
-            <a href="#contact" className="hover:underline">Contact</a>
-          </div>
-        </nav>
-      </header>
+      <Header onHome />
 
       <main id="top">
         {/* Hero: the name sits on the horizon, where the sea meets the sky. */}
@@ -163,7 +157,7 @@ export function Site() {
               </div>
               <div className="grid content-start gap-4">
                 <figure className="grid gap-2">
-                  <img src="hotel/balcony-view.jpg" alt="View from a sea view balcony over Marine Parade East to the sea" className="aspect-[16/9] w-full rounded-3xl object-cover" loading="lazy" />
+                  <img src={asset("hotel/balcony-view.jpg")} alt="View from a sea view balcony over Marine Parade East to the sea" className="aspect-[16/9] w-full rounded-3xl object-cover" loading="lazy" />
                   <figcaption className="text-sm text-drift">The view from a sea view balcony.</figcaption>
                 </figure>
                 <p className="max-w-[60ch]">We're on Marine Parade East, right on the seafront. Trains run to {HOTEL.town} from London Liverpool Street.</p>
@@ -194,12 +188,7 @@ export function Site() {
         </div>
       </main>
 
-      <footer className="gutter bg-sea text-white/85">
-        <div className="mx-auto grid max-w-[1120px] gap-4 py-10 text-sm sm:grid-cols-[1fr_1.4fr]">
-          <p><span className="font-display text-lg text-white">{HOTEL.name}</span><br />{HOTEL.street}, {HOTEL.town} {HOTEL.postcode}</p>
-          <p className="max-w-[60ch]">Details you send through this website are used only to answer your request. © {year} {HOTEL.name}.</p>
-        </div>
-      </footer>
+      <Footer />
 
       <RequestDialog room={requesting} stay={stay} onClose={() => setRequesting(null)} />
       <Gallery title={viewing?.title ?? ""} photos={viewing?.photos ?? null} start={viewing?.start ?? 0} onClose={closeGallery} />
@@ -239,33 +228,24 @@ function RoomRow({ room, avail, stay, onRequest, onCheck, onPhotos }: { room: Ro
   return (
     <li className="grid gap-4 border-b border-shore py-6 sm:grid-cols-[260px_1fr_auto] sm:items-start sm:gap-7">
       {room.photos?.length ? (
-        <div className="grid gap-2">
-          <button type="button" onClick={() => onPhotos(room)} className="group relative block overflow-hidden rounded-2xl" aria-label={`See ${room.photos.length} photos of the ${room.name}`}>
-            <img src={`${room.photos[0]!.src}-sm.jpg`} alt={room.photos[0]!.alt} className="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" loading="lazy" />
-            <span className="absolute bottom-2 right-2 rounded-full bg-ink/75 px-2.5 py-1 text-xs font-semibold text-white">{room.photos.length} photos</span>
-          </button>
-          <div className="grid grid-cols-3 gap-2">
-            {room.photos.slice(1, 4).map((p, k) => (
-              <button key={p.src} type="button" onClick={() => onPhotos(room, k + 1)} className="overflow-hidden rounded-lg" aria-label={`Photo ${k + 2}: ${p.alt}`}>
-                <img src={`${p.src}-sm.jpg`} alt="" className="aspect-[4/3] w-full object-cover" loading="lazy" />
-              </button>
-            ))}
-          </div>
-        </div>
+        <Carousel photos={room.photos} onOpen={(k) => onPhotos(room, k)} label={`${room.name} photos`} className="overflow-hidden rounded-2xl" />
       ) : (
-        <div className={`photo-slot ${room.seaView ? "sea" : ""} grid aspect-[4/3] w-full max-w-[260px] place-items-end rounded-2xl p-2 sm:max-w-full`} role="img" aria-label={`Photo of the ${room.name} coming soon`}>
+        <div className={`photo-slot ${room.seaView ? "sea" : ""} grid aspect-[4/3] w-full place-items-end rounded-2xl p-2`} role="img" aria-label={`Photos of the ${room.name} coming soon`}>
           <span className="rounded-full bg-paper/80 px-2 py-0.5 text-[0.7rem] text-drift">Photos soon</span>
         </div>
       )}
       <div className="grid min-w-0 content-start gap-2">
-        <h4 className="font-display text-[1.45rem] leading-tight">{room.name}</h4>
+        <h4 className="font-display text-[1.45rem] leading-tight">
+          {room.description ? <a href={roomHref(room.name)} className="hover:underline">{room.name}</a> : room.name}
+        </h4>
         <p className="text-drift">{room.size ? `${room.size} m² · ` : ""}{room.beds} · sleeps {room.sleeps}</p>
         <p className="max-w-[58ch]">{room.blurb}</p>
-        {room.features && (
-          <ul className="mt-1 flex flex-wrap gap-1.5" aria-label="Room features">
-            {room.features.map((f) => <li key={f} className="rounded-full bg-sky/70 px-2.5 py-0.5 text-sm">{f}</li>)}
+        {room.highlights && (
+          <ul className="mt-1 flex flex-wrap gap-1.5" aria-label="Highlights">
+            {room.highlights.map((h) => <li key={h.title} className="rounded-full bg-sky/70 px-2.5 py-0.5 text-sm">{h.title}</li>)}
           </ul>
         )}
+        {room.description && <a href={roomHref(room.name)} className="mt-1 justify-self-start font-semibold underline underline-offset-4">See room details</a>}
       </div>
       <div className="sm:pt-1 sm:text-right">{status}</div>
     </li>

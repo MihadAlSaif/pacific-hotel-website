@@ -5,6 +5,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "export",
   images: { unoptimized: true },
+  // Room pages are written as rooms/<name>/index.html, so /rooms/<name>/ works on any static host.
+  trailingSlash: true,
 };
 
 export default nextConfig;

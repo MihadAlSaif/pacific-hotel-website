@@ -30,7 +30,7 @@ css = css.replace(/@font-face\{[^}]*\}/g, (rule) => {
 const html = `<title>Pacific Hotel Website</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>${css}</style>
-<div style="background:#fff4d6;padding:8px max(20px,env(safe-area-inset-left,0px));font:14px system-ui;color:#0f2a3d"><b>Preview.</b> Availability here is sample data; the live site uses BedSync. Photos are placeholders.</div>
+<div style="background:#fff4d6;padding:8px max(20px,env(safe-area-inset-left,0px));font:14px system-ui;color:#0f2a3d"><b>Preview.</b> Availability here is sample data; the live site uses BedSync. Some rooms still have placeholder photos.</div>
 <div id="root"></div>
 <script>${js.outputFiles[0].text.replace(/<\/script/gi, "<\\/script")}</script>
 `;
