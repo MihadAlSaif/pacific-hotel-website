@@ -4,8 +4,9 @@ import { MotionConfig, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getAvailability, type Availability } from "@/api";
 import { addDays, fmtDay, ukToday } from "@/dates";
-import { FACILITIES, HOTEL, ROOMS, type RoomInfo } from "@/site";
+import { FACILITIES, HOTEL, ROOMS, type Photo, type RoomInfo } from "@/site";
 import { EnquiryForm, RequestDialog, type Stay } from "./Forms";
+import { Gallery } from "./Gallery";
 
 export function Site() {
   // Dates are set in the browser, not when the site is built, so "today" is always today in the UK.
@@ -24,6 +25,9 @@ export function Site() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [requesting, setRequesting] = useState<RoomInfo | null>(null);
+  const [viewing, setViewing] = useState<{ title: string; photos: Photo[]; start: number } | null>(null);
+  const closeGallery = useCallback(() => setViewing(null), []);
+  const openPhotos = useCallback((r: RoomInfo, start = 0) => r.photos?.length && setViewing({ title: r.name, photos: r.photos, start }), []);
   const searchRef = useRef<HTMLFormElement>(null);
 
   async function search(e: React.FormEvent) {
@@ -132,8 +136,8 @@ export function Site() {
                   <p className="max-w-[60ch] text-drift">Every room has a private bathroom with a walk-in shower. Choose your dates above to see what's free.</p>
                 )}
               </div>
-              <RoomGroup title="Facing the sea" rooms={seaRooms} avail={avail} stay={stay} onRequest={setRequesting} onCheck={focusSearch} />
-              <RoomGroup title="Town side" rooms={townRooms} avail={avail} stay={stay} onRequest={setRequesting} onCheck={focusSearch} />
+              <RoomGroup title="Facing the sea" rooms={seaRooms} avail={avail} stay={stay} onRequest={setRequesting} onCheck={focusSearch} onPhotos={openPhotos} />
+              <RoomGroup title="Town side" rooms={townRooms} avail={avail} stay={stay} onRequest={setRequesting} onCheck={focusSearch} onPhotos={openPhotos} />
             </section>
 
             <section id="stay" aria-labelledby="stay-title" className="grid gap-8 sm:grid-cols-[1fr_1.4fr]">
@@ -158,9 +162,10 @@ export function Site() {
                 <a className="btn justify-self-start" href={HOTEL.mapsUrl} target="_blank" rel="noopener">Open in Google Maps</a>
               </div>
               <div className="grid content-start gap-4">
-                <div className="photo-slot sea grid aspect-[16/9] w-full max-w-full place-items-end rounded-3xl p-4">
-                  <span className="rounded-full bg-paper/80 px-3 py-1 text-xs text-drift">Photo of the hotel front coming soon</span>
-                </div>
+                <figure className="grid gap-2">
+                  <img src="hotel/balcony-view.jpg" alt="View from a sea view balcony over Marine Parade East to the sea" className="aspect-[16/9] w-full rounded-3xl object-cover" loading="lazy" />
+                  <figcaption className="text-sm text-drift">The view from a sea view balcony.</figcaption>
+                </figure>
                 <p className="max-w-[60ch]">We're on Marine Parade East, right on the seafront. Trains run to {HOTEL.town} from London Liverpool Street.</p>
               </div>
             </section>
@@ -197,26 +202,25 @@ export function Site() {
       </footer>
 
       <RequestDialog room={requesting} stay={stay} onClose={() => setRequesting(null)} />
+      <Gallery title={viewing?.title ?? ""} photos={viewing?.photos ?? null} start={viewing?.start ?? 0} onClose={closeGallery} />
     </MotionConfig>
   );
 }
 
-function RoomGroup({ title, rooms, avail, stay, onRequest, onCheck }: {
-  title: string; rooms: RoomInfo[]; avail: Availability | null; stay: Stay | null; onRequest: (r: RoomInfo) => void; onCheck: () => void;
-}) {
+type RowActions = { onRequest: (r: RoomInfo) => void; onCheck: () => void; onPhotos: (r: RoomInfo, start?: number) => void };
+
+function RoomGroup({ title, rooms, avail, stay, ...act }: { title: string; rooms: RoomInfo[]; avail: Availability | null; stay: Stay | null } & RowActions) {
   return (
     <div className="grid gap-1">
       <h3 className="border-b border-shore pb-2 font-sans text-sm font-semibold text-drift">{title}</h3>
       <ul className="grid">
-        {rooms.map((r) => <RoomRow key={r.name} room={r} avail={avail} stay={stay} onRequest={onRequest} onCheck={onCheck} />)}
+        {rooms.map((r) => <RoomRow key={r.name} room={r} avail={avail} stay={stay} {...act} />)}
       </ul>
     </div>
   );
 }
 
-function RoomRow({ room, avail, stay, onRequest, onCheck }: {
-  room: RoomInfo; avail: Availability | null; stay: Stay | null; onRequest: (r: RoomInfo) => void; onCheck: () => void;
-}) {
+function RoomRow({ room, avail, stay, onRequest, onCheck, onPhotos }: { room: RoomInfo; avail: Availability | null; stay: Stay | null } & RowActions) {
   const live = avail?.rooms.find((x) => x.name === room.name);
   let status: React.ReactNode;
   if (room.closedNote) status = <p className="text-drift">{room.closedNote}</p>;
@@ -233,16 +237,37 @@ function RoomRow({ room, avail, stay, onRequest, onCheck }: {
     );
 
   return (
-    <li className="grid gap-4 border-b border-shore py-5 sm:grid-cols-[180px_1fr_auto] sm:items-center sm:gap-6">
-      <div className={`photo-slot ${room.seaView ? "sea" : ""} grid aspect-[4/3] w-full max-w-[260px] place-items-end rounded-2xl p-2 sm:max-w-full`} role="img" aria-label={`Photo of the ${room.name} coming soon`}>
-        <span className="rounded-full bg-paper/80 px-2 py-0.5 text-[0.7rem] text-drift">Photo soon</span>
-      </div>
-      <div className="grid min-w-0 gap-1">
+    <li className="grid gap-4 border-b border-shore py-6 sm:grid-cols-[260px_1fr_auto] sm:items-start sm:gap-7">
+      {room.photos?.length ? (
+        <div className="grid gap-2">
+          <button type="button" onClick={() => onPhotos(room)} className="group relative block overflow-hidden rounded-2xl" aria-label={`See ${room.photos.length} photos of the ${room.name}`}>
+            <img src={`${room.photos[0]!.src}-sm.jpg`} alt={room.photos[0]!.alt} className="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" loading="lazy" />
+            <span className="absolute bottom-2 right-2 rounded-full bg-ink/75 px-2.5 py-1 text-xs font-semibold text-white">{room.photos.length} photos</span>
+          </button>
+          <div className="grid grid-cols-3 gap-2">
+            {room.photos.slice(1, 4).map((p, k) => (
+              <button key={p.src} type="button" onClick={() => onPhotos(room, k + 1)} className="overflow-hidden rounded-lg" aria-label={`Photo ${k + 2}: ${p.alt}`}>
+                <img src={`${p.src}-sm.jpg`} alt="" className="aspect-[4/3] w-full object-cover" loading="lazy" />
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className={`photo-slot ${room.seaView ? "sea" : ""} grid aspect-[4/3] w-full max-w-[260px] place-items-end rounded-2xl p-2 sm:max-w-full`} role="img" aria-label={`Photo of the ${room.name} coming soon`}>
+          <span className="rounded-full bg-paper/80 px-2 py-0.5 text-[0.7rem] text-drift">Photos soon</span>
+        </div>
+      )}
+      <div className="grid min-w-0 content-start gap-2">
         <h4 className="font-display text-[1.45rem] leading-tight">{room.name}</h4>
-        <p className="text-drift">{room.beds} · sleeps {room.sleeps}</p>
-        <p className="max-w-[52ch]">{room.blurb}</p>
+        <p className="text-drift">{room.size ? `${room.size} m² · ` : ""}{room.beds} · sleeps {room.sleeps}</p>
+        <p className="max-w-[58ch]">{room.blurb}</p>
+        {room.features && (
+          <ul className="mt-1 flex flex-wrap gap-1.5" aria-label="Room features">
+            {room.features.map((f) => <li key={f} className="rounded-full bg-sky/70 px-2.5 py-0.5 text-sm">{f}</li>)}
+          </ul>
+        )}
       </div>
-      <div className="sm:text-right">{status}</div>
+      <div className="sm:pt-1 sm:text-right">{status}</div>
     </li>
   );
 }

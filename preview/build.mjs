@@ -1,7 +1,7 @@
 // Builds preview/dist/index.html: the website as one self-contained page with sample availability.
 // Run after `next build` (it reuses the compiled CSS):  node preview/build.mjs
 import { build } from "esbuild";
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
@@ -36,4 +36,6 @@ const html = `<title>Pacific Hotel Website</title>
 `;
 mkdirSync(root + "preview/dist", { recursive: true });
 writeFileSync(root + "preview/dist/index.html", html);
+// Photos sit next to the page, at the same relative paths as on the live site.
+cpSync(root + "public", root + "preview/dist", { recursive: true });
 console.log(`preview/dist/index.html: ${(html.length / 1024).toFixed(0)} KB`);
